@@ -1,8 +1,8 @@
-Redesigned version (based on original work by @zensqlmonitor) to prevent issues with installations using zabbix-proxy - querying is based on timestamps and some data may be missing if arrived just a little late.
+Redesigned version (based on original work by @zensqlmonitor) where issues with installations using zabbix-proxy may occur - querying is based on timestamps and some data may be missing if arrived just a little late.
 
-This version uses auto-increment id values to track synced records, thus ensuring no data are missed. Only tested on PostgreSQL, but MySQL should work as well.
+This version uses auto-increment values to track synced records, thus ensuring no data are missed. Only tested on PostgreSQL, but MySQL should work as well.
 
-auto-increment id column is not present in zabbix by default, so adding column "syncid" to respective tables needs to be done.
+Auto-increment id column is not present in zabbix by default, so adding column "syncid" to respective tables needs to be done (instructions bellow).
 
 # influxdb-zabbix
 
@@ -39,11 +39,8 @@ As InfluxDB provides an excellent compression rate (in our case: 7x), this proje
 	Create auto-increment column:
 	```SQL
 	ALTER TABLE public.history ADD COLUMN syncid SERIAL;
-
 	ALTER TABLE public.history_uint ADD COLUMN syncid SERIAL;
-
 	ALTER TABLE public.trends ADD COLUMN syncid SERIAL;
-
 	ALTER TABLE public.trends_uint ADD COLUMN syncid SERIAL;
 	```
 
@@ -65,13 +62,10 @@ As InfluxDB provides an excellent compression rate (in our case: 7x), this proje
 
 	Create indexes (not tested):
 	```SQL
-	ALTER TABLE `history` ADD `id` INT NOT NULL AUTO_INCREMENT;
-
-	ALTER TABLE `history_uint` ADD `id` INT NOT NULL AUTO_INCREMENT;
-
-	ALTER TABLE `trends` ADD `id` INT NOT NULL AUTO_INCREMENT;
-
-	ALTER TABLE `trends_uint` ADD `id` INT NOT NULL AUTO_INCREMENT;
+	ALTER TABLE `history` ADD `syncid` INT NOT NULL AUTO_INCREMENT;
+	ALTER TABLE `history_uint` ADD `syncid` INT NOT NULL AUTO_INCREMENT;
+	ALTER TABLE `trends` ADD `syncid` INT NOT NULL AUTO_INCREMENT;
+	ALTER TABLE `trends_uint` ADD `syncid` INT NOT NULL AUTO_INCREMENT;
 	```
 
 ### How to use GO code
