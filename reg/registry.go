@@ -6,17 +6,17 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"sync"
-	
+
 	cfg "github.com/zensqlmonitor/influxdb-zabbix/config"
 	log "github.com/zensqlmonitor/influxdb-zabbix/log"
 )
 
 type Registry struct {
 	Table     string
-	Startdate string
+	Startid int
 }
 
-type MapTable map[string]string
+type MapTable map[string]int
 
 //var mapTables = make(MapTable)
 
@@ -46,8 +46,8 @@ func Read(config *cfg.TOMLConfig, mapTables *MapTable) error {
 
 	for i := 0; i < len(regEntries); i++ {
 		tableName := regEntries[i].Table
-		startdate := regEntries[i].Startdate
-		SetValueByKey(mapTables, tableName, startdate)
+		startid := regEntries[i].Startid
+		SetValueByKey(mapTables, tableName, startid)
 	}
 
 	return nil
@@ -66,7 +66,7 @@ func Create(config *cfg.TOMLConfig) error {
 	for _, table := range config.Tables {
 		var reg Registry
 		reg.Table = table.Name
-		reg.Startdate = table.Startdate
+		reg.Startid = table.Startid
 		regEntries[idx] = reg
 		idx += 1
 	}
@@ -81,7 +81,7 @@ func Create(config *cfg.TOMLConfig) error {
 	return nil
 }
 
-func Save(config cfg.TOMLConfig, tableName string, lastClock string) error {
+func Save(config cfg.TOMLConfig, tableName string, lastId int) error {
 
 	// read  file
 	registryJson, err := ioutil.ReadFile(config.Registry.FileName)
@@ -95,13 +95,13 @@ func Save(config cfg.TOMLConfig, tableName string, lastClock string) error {
 	var found bool = false
 	for i := 0; i < len(regEntries); i++ {
 		if regEntries[i].Table == tableName {
-			regEntries[i].Startdate = lastClock
+			regEntries[i].Startid = lastId
 			found = true
 		}
 	}
 	// if not found, create it
 	if found == false {
-		regEntries = append(regEntries, Registry{tableName, lastClock})
+		regEntries = append(regEntries, Registry{tableName, lastId})
 	}
 
 	// write JSON file
@@ -111,17 +111,17 @@ func Save(config cfg.TOMLConfig, tableName string, lastClock string) error {
 	return nil
 }
 
-func SetValueByKey(mt *MapTable, key string, value string) {
+func SetValueByKey(mt *MapTable, key string, value int) {
 	mu.Lock()
 	defer mu.Unlock()
 	(*mt)[key] = value
 }
 
-func GetValueFromKey(mt MapTable, key string) string {
+func GetValueFromKey(mt MapTable, key string) int {
 	if len(mt) > 0 {
 		mu.Lock()
 		defer mu.Unlock()
 		return mt[key]
 	}
-	return ""
+	return 0
 }

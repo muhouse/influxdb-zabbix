@@ -3,10 +3,9 @@ package input
 import (
 	"database/sql"
 	"strings"
-	"time"
-	
-	helpers "github.com/zensqlmonitor/influxdb-zabbix/helpers"
-	
+	"strconv"
+	// "fmt"  // for debug print
+
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
@@ -15,19 +14,19 @@ type Input struct {
 	Provider  string
 	Address   string
 	Tablename string
-	Starttime string
-	Endtime   string
-	Maxclock  time.Time
+	Startid   int
+	Endid     int
+	Maxid     int
 	Result    []string
 }
 
-func NewExtracter(provider string, address string, tablename string, starttime string, endtime string) Input {
+func NewExtracter(provider string, address string, tablename string, startid int, endid int) Input {
 	i := Input{}
 	i.Provider = provider
 	i.Address = address
 	i.Tablename = tablename
-	i.Starttime = starttime
-	i.Endtime = endtime
+	i.Startid = startid
+	i.Endid = endid
 	return i
 }
 
@@ -47,8 +46,8 @@ func (input *Input) getSQL() string {
 	return strings.Replace(
 		strings.Replace(
 			query,
-			"##STARTDATE##", input.Starttime, -1),
-		    "##ENDDATE##", input.Endtime, -1)
+			"##STARTID##", strconv.Itoa(input.Startid), -1),
+		    "##ENDID##", strconv.Itoa(input.Endid), -1)
 }
 
 func (input *Input) Extract() error {
@@ -73,14 +72,19 @@ func (input *Input) Extract() error {
 
 	// fetch result
 	resultInline := []string{}
-	var clock string
+	var syncid int
 
 	for rows.Next() {
 		var result string
-		if err := rows.Scan(&result, &clock); err != nil {
+		if err := rows.Scan(&result, &syncid); err != nil {
 			return err
 		}
 		resultInline = append(resultInline, result)
+
+		// save max id from the result set if bigger then current
+	  if input.Maxid < syncid {
+			input.Maxid = syncid
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return err
@@ -89,14 +93,7 @@ func (input *Input) Extract() error {
 
 	input.Result = resultInline
 
-	// saved max clock from the result set
-	if len(clock) > 0 {
-		lastclock, err := helpers.MsToTime(strings.Trim(clock, " "))
-		if err != nil {
-			return err
-		}
-		input.Maxclock = lastclock
-	}
+	// fmt.Println(resultInline)
 
 	return nil
 }

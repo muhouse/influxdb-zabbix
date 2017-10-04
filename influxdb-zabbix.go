@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"reflect"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -40,11 +39,11 @@ type Param struct {
 }
 
 type Input struct {
-	provider      string
-	address       string
-	tablename     string
-	interval      int
-	hoursperbatch int
+	provider          string
+	address           string
+	tablename         string
+	interval          int
+	inputrowsperbatch int
 }
 
 type Output struct {
@@ -77,18 +76,9 @@ func (p *Param) gatherData() error {
 		return err
 	}
 
-	// set times
-	starttimereg := registry.GetValueFromKey(mapTables, currTable)
-	startimerfc, err := time.Parse("2006-01-02T15:04:05", starttimereg)
-	if err != nil {
-		startimerfc, err = time.Parse(time.RFC3339, starttimereg)
-		if err != nil {
-			return err
-		}
-	}
-	var starttimestr string = strconv.FormatInt(startimerfc.Unix(), 10)
-	var endtimetmp time.Time = startimerfc.Add(time.Hour * time.Duration(p.input.hoursperbatch))
-	var endtimestr string = strconv.FormatInt(endtimetmp.Unix(), 10)
+	// set start/end id
+	startid := registry.GetValueFromKey(mapTables, currTable)
+	var endid int = startid + p.input.inputrowsperbatch
 
 	//
 	// <--  Extract
@@ -96,10 +86,10 @@ func (p *Param) gatherData() error {
 	var tlen int = len(currTable)
 	infoLogs = append(infoLogs,
 		fmt.Sprintf(
-			"----------- | %s | [%v --> %v[",
+			"----------- | %s | [id %v --> id %v]",
 			currTableForLog,
-			startimerfc.Format("2006-01-02 15:04:00"),
-			endtimetmp.Format("2006-01-02 15:04:00")))
+			startid,
+			endid))
 
 	//start watcher
 	startwatch := time.Now()
@@ -107,8 +97,8 @@ func (p *Param) gatherData() error {
 		p.input.provider,
 		p.input.address,
 		currTable,
-		starttimestr,
-		endtimestr)
+		startid,
+		endid)
 
 	if err := ext.Extract(); err != nil {
 		log.Error(1, "Error while executing script: %s", err)
@@ -123,12 +113,26 @@ func (p *Param) gatherData() error {
 			currTableForLog,
 			rowcount,
 			time.Since(startwatch)))
-			
-    // set max clock time
-	var maxclock time.Time = startimerfc
-	if ext.Maxclock.IsZero() == false {
-		maxclock = ext.Maxclock
+
+	// set max id
+	var maxid = startid
+	if ext.Maxid > 0 {
+		maxid = ext.Maxid
+	// 	// debug print
+	// 	infoLogs = append(infoLogs,
+	// 		fmt.Sprintf(
+	// 			"--- Debug   | %s | Updating maxid to %v",
+	// 			currTableForLog,
+	// 			maxid))
+	// } else {
+	// 	// debug print
+	// 	infoLogs = append(infoLogs,
+	// 		fmt.Sprintf(
+	// 			"--- Debug   | %s | Maxid remains %v",
+	// 			currTableForLog,
+	// 			maxid))
 	}
+
 
 	// no row
 	if rowcount == 0 {
@@ -235,7 +239,10 @@ func (p *Param) gatherData() error {
 	}
 
 	// Save in registry
-	saveMaxTime(currTable, startimerfc, maxclock, p.input.hoursperbatch)
+	registry.Save(config,
+		currTable,
+		maxid)
+
 
 	tlen = len(currTable)
 	infoLogs = append(infoLogs,
@@ -245,14 +252,14 @@ func (p *Param) gatherData() error {
 
 	if config.Logging.LevelFile == "Trace" || config.Logging.LevelConsole == "Trace" {
 		runtime.ReadMemStats(&m)
-		log.Trace(fmt.Sprintf("--- Memory usage: Alloc = %s | TotalAlloc = %s | Sys = %s | NumGC = %v", 
-			helpers.IBytes(m.Alloc / 1024), 
-			helpers.IBytes(m.TotalAlloc / 1024), 
-			helpers.IBytes(m.Sys / 1024), 
+		log.Trace(fmt.Sprintf("--- Memory usage: Alloc = %s | TotalAlloc = %s | Sys = %s | NumGC = %v",
+			helpers.IBytes(m.Alloc / 1024),
+			helpers.IBytes(m.TotalAlloc / 1024),
+			helpers.IBytes(m.Sys / 1024),
 			m.NumGC))
 	}
 
-				
+
 	// print all log messages
 	print(infoLogs)
 
@@ -266,25 +273,6 @@ func print(infoLogs []string) {
 	for i := 0; i < len(infoLogs); i++ {
 		log.Info(infoLogs[i])
 	}
-}
-
-//
-// Save max time 
-//
-func saveMaxTime(tablename string, starttime time.Time, maxtime time.Time, duration int) {
-
-	var timetosave time.Time
-
-	// if maxtime is greater than now, keep the maxclock returned 
-	if (starttime.Add(time.Hour * time.Duration(duration))).After(time.Now()) {
-		timetosave = maxtime
-	} else {
-		timetosave = starttime.Add(time.Hour * time.Duration(duration))
-	}
-
-	registry.Save(config,
-		tablename,
-		timetosave.Format(time.RFC3339))
 }
 
 //
@@ -392,20 +380,13 @@ func main() {
 	for _, table := range config.Tables {
 		if table.Active {
 			var tlen int = len(table.Name)
-			var durationh string
-			var duration time.Duration = time.Duration(table.Hoursperbatch) * time.Hour
-			if (duration.Hours() >= 24) {
-				durationh = fmt.Sprintf("%v days per batch", duration.Hours()/24)
-			} else {
-				durationh = fmt.Sprintf("%v hours per batch", duration.Hours())
-			}
 
 			log.Trace(
 				fmt.Sprintf(
-					"----------- | %s | Each %v sec | %s | Output by %v",
+					"----------- | %s | Each %v sec | Input %v records per batch | Output by %v",
 					helpers.RightPad(table.Name, " ", 12-tlen),
 					table.Interval,
-					durationh,
+					table.Inputrowsperbatch,
 					table.Outputrowsperbatch))
 
 			tables = append(tables, table)
@@ -419,7 +400,7 @@ func main() {
 	log.Trace(fmt.Sprintf("--- Provider: %s", provider))
 
 	influxdb := config.InfluxDB
-	
+
 	for _, table := range tables {
 
 		input := Input{
@@ -427,7 +408,7 @@ func main() {
 			address,
 			table.Name,
 			table.Interval,
-			table.Hoursperbatch}
+			table.Inputrowsperbatch}
 
 		output := Output{
 			influxdb.Url,

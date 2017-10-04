@@ -1,11 +1,18 @@
+Redesigned version (based on original work by @zensqlmonitor) to prevent issues with installations using zabbix-proxy - querying is based on timestamps and some data may be missing if arrived just a little late.
+
+This version uses auto-increment id values to track synced records, thus ensuring no data are missed. Only tested on PostgreSQL, but MySQL should work as well.
+
+auto-increment id column is not present in zabbix by default, so adding column "syncid" to respective tables needs to be done.
+
 # influxdb-zabbix
+
 Gather data from Zabbix back-end and load to InfluxDB in near real-time for enhanced performance and easier usage with Grafana.
 
 As InfluxDB provides an excellent compression rate (in our case: 7x), this project could be used also to archive Zabbix data.
 
 ## Getting Started
 
-- InfluxDB: 
+- InfluxDB:
 	- [Install InfluxDB](https://docs.influxdata.com/influxdb/v1.1/introduction/installation/)
 	- [Create a database with a retention period ](https://docs.influxdata.com/influxdb/v1.1/introduction/getting_started/) <br />
 - Grafana:
@@ -15,48 +22,40 @@ As InfluxDB provides an excellent compression rate (in our case: 7x), this proje
 	- [Install GO](https://golang.org/doc/install)
 	- [Setup you GOPATH](https://golang.org/doc/code.html#GOPATH)
 	- Run ``` go get github.com/zensqlmonitor/influxdb-zabbix ```
-	- Edit influxdb-zabbix.conf to match your needs  <br />	
+	- Edit influxdb-zabbix.conf to match your needs  <br />
 - PostgreSQL:
 
 	Create user:
-	```SQL 
+	```SQL
 	CREATE USER influxdb_zabbix WITH PASSWORD '***';
 	GRANT USAGE ON SCHEMA public TO influxdb_zabbix;
 	```
 	Grants at the database level:
-	```SQL 
+	```SQL
 	GRANT SELECT ON public.history, public.history_uint TO influxdb_zabbix;
 	GRANT SELECT ON public.trends, public.trends_uint TO influxdb_zabbix;
 	```
-	
-	Create indexes:
-	```SQL 
-	CREATE UNIQUE INDEX idx_history_clock_ns_itemid
-		ON public.history USING btree (clock)
-		TABLESPACE zabbixindex;
 
-	CREATE UNIQUE INDEX idx_history_uint_clock_ns_itemid
-		ON public.history_uint USING btree (clock)
-		TABLESPACE zabbixindex;
+	Create auto-increment column:
+	```SQL
+	ALTER TABLE public.history ADD COLUMN syncid SERIAL;
 
-	CREATE INDEX idx_trends_clock_itemid
-		ON public.trends USING btree (clock)
-		TABLESPACE zabbixindex;
+	ALTER TABLE public.history_uint ADD COLUMN syncid SERIAL;
 
-	CREATE INDEX idx_trends_uint_clock_itemid
-		ON public.trends_uint USING btree (clock)
-		TABLESPACE zabbixindex;
-	```	
-	
+	ALTER TABLE public.trends ADD COLUMN syncid SERIAL;
+
+	ALTER TABLE public.trends_uint ADD COLUMN syncid SERIAL;
+	```
+
 - MariaDB / MySQL:
 
 	Create user:
-	```SQL 
+	```SQL
 	CREATE USER 'influxdb_zabbix'@'localhost' IDENTIFIED BY '***';
 	```
-	
+
 	Grants at the database level:
-	```SQL 
+	```SQL
 	GRANT SELECT ON zabbix.trends TO influxdb_zabbix@localhost;
 	GRANT SELECT ON zabbix.trends_uint TO influxdb_zabbix@localhost;
 	GRANT SELECT ON zabbix.history TO influxdb_zabbix@localhost;
@@ -64,25 +63,17 @@ As InfluxDB provides an excellent compression rate (in our case: 7x), this proje
  	flush privileges;
 	```
 
-	Create indexes:
-	```SQL 
-	CREATE UNIQUE INDEX idx_history_clock_ns_itemid
-		ON history (clock) USING btree;
+	Create indexes (not tested):
+	```SQL
+	ALTER TABLE `history` ADD `id` INT NOT NULL AUTO_INCREMENT;
 
-	CREATE UNIQUE INDEX idx_history_uint_clock_ns_itemid
-		ON history_uint (clock) USING btree;
+	ALTER TABLE `history_uint` ADD `id` INT NOT NULL AUTO_INCREMENT;
 
-	CREATE INDEX idx_trends_clock_itemid
-		ON trends (clock) USING btree;
+	ALTER TABLE `trends` ADD `id` INT NOT NULL AUTO_INCREMENT;
 
-	CREATE INDEX idx_trends_uint_clock_itemid
-		ON trends_uint (clock) USING btree;
+	ALTER TABLE `trends_uint` ADD `id` INT NOT NULL AUTO_INCREMENT;
 	```
-	
-	NB:
-	For trends_* tables we can use pt-online-schema-change for online index create without lock, but for history_* tables we can
-	only use create index, because primary key for these tables does not exist.
-	
+
 ### How to use GO code
 
 - Run in background: ``` go run influxdb-zabbix.go & ```
@@ -111,9 +102,9 @@ Have a look to the scripts folder
 
 - Configurable at table-level:
   - interval: polling interval, minimum of 15 sec
-  - hours per batch : number of hours/batch to extract from zabbix backend 
+  - records per batch : number of records/batch to extract from zabbix backend (actual number of records reported may differ, because zabbix rows are repeated for different host groups)
   - output rows per batch :  allow the destination load to be splitted in multiple batches
- 
+
 ## License
 
 MIT-LICENSE. See LICENSE file provided in the repository for details
