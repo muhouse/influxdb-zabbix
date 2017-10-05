@@ -45,8 +45,7 @@ replace(replace(CASE
 || ',value_avg=' || CAST(tre.value_avg as varchar(32))
 || ',value_max=' || CAST(tre.value_max as varchar(32))
 -- timestamp (in ms)
-|| ' ' || CAST((his.clock * 1000.) as char(14)) as INLINE
-,  CAST((tre.clock * 1000.) as char(14)) as clock
+|| ' ' || CAST((tre.clock * 1000.) as char(14)) as INLINE
 -- syncid
 , tre.syncid as syncid
 FROM public.trends tre
@@ -86,8 +85,7 @@ replace(replace(CASE
 || ',value_avg=' || CAST(tre.value_avg as varchar(32))
 || ',value_max=' || CAST(tre.value_max as varchar(32))
 -- timestamp (in ms)
-|| ' ' || CAST((his.clock * 1000.) as char(14)) as INLINE
-,  CAST((tre.clock * 1000.) as char(14)) as clock
+|| ' ' || CAST((tre.clock * 1000.) as char(14)) as INLINE
 -- syncid
 , tre.syncid as syncid
 FROM public.trends_uint tre
@@ -127,7 +125,6 @@ replace(replace(CASE
 || ' value=' || CAST(his.value as varchar(32))
 -- timestamp (in ms)
 || ' ' || CAST((his.clock * 1000.) + round(his.ns / 1000000., 0) as char(14)) as INLINE
-,  CAST((his.clock * 1000.) as char(14)) as clock
 -- syncid
 , his.syncid as syncid
 FROM public.history his
@@ -167,7 +164,6 @@ replace(replace(CASE
 || ' value=' || CAST(his.value as varchar(32))
 -- timestamp (in ms)
 || ' ' || CAST((his.clock * 1000.) + round(his.ns / 1000000., 0) as char(14)) as INLINE
-,  CAST((his.clock * 1000.) as char(14)) as clock
 -- syncid
 , his.syncid as syncid
 FROM public.history_uint his
