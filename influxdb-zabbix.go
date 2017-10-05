@@ -13,12 +13,12 @@ import (
 	"syscall"
 	"time"
 
-	cfg "github.com/zensqlmonitor/influxdb-zabbix/config"
-	helpers "github.com/zensqlmonitor/influxdb-zabbix/helpers"
-	input "github.com/zensqlmonitor/influxdb-zabbix/input"
-	log "github.com/zensqlmonitor/influxdb-zabbix/log"
-	influx "github.com/zensqlmonitor/influxdb-zabbix/output/influxdb"
-	registry "github.com/zensqlmonitor/influxdb-zabbix/reg"
+	cfg "github.com/vasekch/influxdb-zabbix/config"
+	helpers "github.com/vasekch/influxdb-zabbix/helpers"
+	input "github.com/vasekch/influxdb-zabbix/input"
+	log "github.com/vasekch/influxdb-zabbix/log"
+	influx "github.com/vasekch/influxdb-zabbix/output/influxdb"
+	registry "github.com/vasekch/influxdb-zabbix/reg"
 )
 
 var m runtime.MemStats

@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"sync"
 
-	cfg "github.com/zensqlmonitor/influxdb-zabbix/config"
-	log "github.com/zensqlmonitor/influxdb-zabbix/log"
+	cfg "github.com/vasekch/influxdb-zabbix/config"
+	log "github.com/vasekch/influxdb-zabbix/log"
 )
 
 type Registry struct {

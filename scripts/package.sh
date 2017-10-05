@@ -2,11 +2,11 @@
 
 ###########################################################################
 # Packaging script which creates debian and RPM packages for influxdb-zabbix.
-# Requirements: 
+# Requirements:
 # - GOPATH must be set
 # - 'fpm' must be on the path
 #
-#    https://github.com/zensqlmonitor/influxdb-zabbix
+#    https://github.com/vasekch/influxdb-zabbix
 #
 # Packaging process: to install a build, simply execute:
 #
@@ -34,7 +34,7 @@ WORK_DIR=''
 POST_INSTALL_PATH=$(mktemp)
 ARCH=$(uname -i)
 LICENSE=MIT
-URL=https://github.com/zensqlmonitor/influxdb-zabbix
+URL=https://github.com/vasekch/influxdb-zabbix
 MAINTAINER=sqlzen@hotmail.com
 VENDOR=sqlzenmonitor
 DESCRIPTION="Gather data from Zabbix back-end and load to InfluxDB in near real-time"
@@ -58,7 +58,7 @@ usage() {
 make_dir_tree() {
     work_dir=$1
 	  version=$2
-     
+
     mkdir -p $work_dir/$INSTALL_ROOT_DIR/versions/$version/scripts
     if [ $? -ne 0 ]; then
         echo "Failed to create installation directory -- aborting."
@@ -83,8 +83,8 @@ make_dir_tree() {
     if [ $? -ne 0 ]; then
         echo "Failed to create log rotate temporary directory -- aborting."
         cleanup_exit 1
-    fi	
-	
+    fi
+
 }
 
 # cleanup_exit removes all resources created during the process and exits with
@@ -135,7 +135,7 @@ do_build() {
         echo "Build failed, unable to create package -- aborting"
         cleanup_exit 1
     fi
-	
+
 	# copy configuration file
 	echo "Copying configuration file..."
 	cp ././$CONFIG_FILE $GOPATH_INSTALL/bin
@@ -143,7 +143,7 @@ do_build() {
         echo "Build failed, unable to Copying configuration file -- aborting"
         cleanup_exit 1
     fi
-	
+
     echo "Build completed successfully."
 }
 
@@ -297,7 +297,7 @@ COMMON_FPM_ARGS="-C $TMP_WORK_DIR --vendor $VENDOR --url $URL --license $LICENSE
                 --maintainer $MAINTAINER --after-install $POST_INSTALL_PATH \
                 --name influxdb-zabbix --provides influxdb-zabbix --version $VERSION \
 				        --config-files $CONFIG_ROOT_DIR --package ./$rpm_package"
-                                                        
+
 $rpm_args fpm -s dir -t rpm --description "$DESCRIPTION" $COMMON_FPM_ARGS
 if [ $? -ne 0 ]; then
     echo "Failed to create RPM package -- aborting."
@@ -309,7 +309,7 @@ COMMON_FPM_ARGS="-C $TMP_WORK_DIR --vendor $VENDOR --url $URL --license $LICENSE
                 --maintainer $MAINTAINER --after-install $POST_INSTALL_PATH \
                 --name influxdb-zabbix --provides influxdb-zabbix --version $VERSION \
 				        --config-files $CONFIG_ROOT_DIR --package ./$debian_package"
-                                                        
+
 fpm -s dir -t deb $deb_args --description "$DESCRIPTION" $COMMON_FPM_ARGS
 if [ $? -ne 0 ]; then
     echo "Failed to create Debian package -- aborting."
