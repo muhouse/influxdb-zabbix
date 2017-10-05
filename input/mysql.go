@@ -46,6 +46,7 @@ replace(replace(CASE
 || ',value_max=' || CAST(tre.value_max as char)
 -- timestamp (in ms)
 || ' ' || CAST((tre.clock * 1000.) as char) as INLINE
+,  CAST((tre.clock * 1000.) as char) as clock
 -- syncid
 , tre.syncid as syncid
 FROM trends tre
@@ -87,6 +88,7 @@ replace(replace(CASE
 || ',value_max=' || CAST(tre.value_max as char)
 -- timestamp (in ms)
 || ' ' || CAST((tre.clock * 1000.) as char) as INLINE
+,  CAST((tre.clock * 1000.) as char) as clock
 -- syncid
 , tre.syncid as syncid
 FROM trends tre
@@ -126,8 +128,7 @@ replace(replace(CASE
 || ' value=' || CAST(his.value as char)
 -- timestamp (in ms)
 || ' ' || CAST((his.clock * 1000.) as char) as INLINE
--- POSSIBLE IMPROVEMENT:
--- || ' ' || CAST((his.clock * 1000.) + round(his.ns / 1000000., 0) as char) as INLINE
+,  CAST((his.clock * 1000.) as char) as clock
 -- syncid
 , his.syncid as syncid
 FROM history his
@@ -167,8 +168,7 @@ replace(replace(CASE
 || ' value=' || CAST(his.value as char)
 -- timestamp (in ms)
 || ' ' || CAST((his.clock * 1000.) as char) as INLINE
--- POSSIBLE IMPROVEMENT:
--- || ' ' || CAST((his.clock * 1000.) + round(his.ns / 1000000., 0) as char) as INLINE
+,  CAST((his.clock * 1000.) as char) as clock
 -- syncid
 , his.syncid as syncid
 FROM history_uint his

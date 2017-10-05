@@ -72,11 +72,12 @@ func (input *Input) Extract() error {
 
 	// fetch result
 	resultInline := []string{}
+	var clock string
 	var syncid int
 
 	for rows.Next() {
 		var result string
-		if err := rows.Scan(&result, &syncid); err != nil {
+		if err := rows.Scan(&result, &clock, &syncid); err != nil {
 			return err
 		}
 		resultInline = append(resultInline, result)
