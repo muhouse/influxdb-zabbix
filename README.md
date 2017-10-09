@@ -38,10 +38,10 @@ As InfluxDB provides an excellent compression rate (in our case: 7x), this proje
 
 	Create auto-increment column:
 	```SQL
-	ALTER TABLE public.history ADD COLUMN syncid SERIAL;
-	ALTER TABLE public.history_uint ADD COLUMN syncid SERIAL;
-	ALTER TABLE public.trends ADD COLUMN syncid SERIAL;
-	ALTER TABLE public.trends_uint ADD COLUMN syncid SERIAL;
+	ALTER TABLE public.history ADD COLUMN syncid BIGSERIAL PRIMARY KEY;
+	ALTER TABLE public.history_uint ADD COLUMN syncid BIGSERIAL PRIMARY KEY;
+	ALTER TABLE public.trends ADD COLUMN syncid SERIAL BIGPRIMARY KEY;
+	ALTER TABLE public.trends_uint ADD COLUMN syncid BIGSERIAL PRIMARY KEY;
 	```
 
 - MariaDB / MySQL:
@@ -62,10 +62,10 @@ As InfluxDB provides an excellent compression rate (in our case: 7x), this proje
 
 	Create indexes (not tested):
 	```SQL
-	ALTER TABLE `history` ADD `syncid` INT NOT NULL AUTO_INCREMENT;
-	ALTER TABLE `history_uint` ADD `syncid` INT NOT NULL AUTO_INCREMENT;
-	ALTER TABLE `trends` ADD `syncid` INT NOT NULL AUTO_INCREMENT;
-	ALTER TABLE `trends_uint` ADD `syncid` INT NOT NULL AUTO_INCREMENT;
+	ALTER TABLE `history` ADD COLUMN `syncid` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT;
+	ALTER TABLE `history_uint` ADD COLUMN `syncid` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT;
+	ALTER TABLE `trends` ADD COLUMN `syncid` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT;
+	ALTER TABLE `trends_uint` ADD COLUMN `syncid` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT;
 	```
 
 ### How to use GO code
