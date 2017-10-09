@@ -40,7 +40,7 @@ As InfluxDB provides an excellent compression rate (in our case: 7x), this proje
 	```SQL
 	ALTER TABLE public.history ADD COLUMN syncid BIGSERIAL PRIMARY KEY;
 	ALTER TABLE public.history_uint ADD COLUMN syncid BIGSERIAL PRIMARY KEY;
-	ALTER TABLE public.trends ADD COLUMN syncid SERIAL BIGPRIMARY KEY;
+	ALTER TABLE public.trends ADD COLUMN syncid BIGSERIAL PRIMARY KEY;
 	ALTER TABLE public.trends_uint ADD COLUMN syncid BIGSERIAL PRIMARY KEY;
 	```
 
